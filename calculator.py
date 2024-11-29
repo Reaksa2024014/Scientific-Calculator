@@ -3,6 +3,7 @@ from tkinter import messagebox
 from tkinter import Toplevel, Text, Label
 import math
 
+
 class Calculator:
     def __init__(self, master):
         self.master = master
@@ -14,21 +15,28 @@ class Calculator:
         self.equation = StringVar()
         self.entry_value = ""
         self.is_radian = True  # Default to radians
+        self.is_dark_mode = True  # Default to dark mode
+
+        # Colors for modes
+        self.colors = {
+            "dark": {"bg": "#2c2f33", "fg": "white", "button_bg": "#7289da", "button_fg": "white"},
+            "light": {"bg": "#ffffff", "fg": "black", "button_bg": "#d3d3d3", "button_fg": "black"},
+        }
 
         # Stylish Entry Widget
-        entry = Entry(master, width=22, bg="#23272a", fg="white", font=("Arial", 24),
-                      textvariable=self.equation, bd=5, highlightthickness=0, justify='right')
-        entry.grid(row=0, column=0, columnspan=4, ipady=10, padx=10, pady=10, sticky="nsew")
+        self.entry = Entry(master, width=22, bg=self.colors["dark"]["bg"], fg=self.colors["dark"]["fg"],
+                           font=("Arial", 24), textvariable=self.equation, bd=5, highlightthickness=0, justify='right')
+        self.entry.grid(row=0, column=0, columnspan=4, ipady=10, padx=10, pady=10, sticky="nsew")
 
         # Create a Frame for buttons
-        button_frame = Frame(master, bg="#2c2f33")
-        button_frame.place(x=10, y=80, width=410, height=550)
+        self.button_frame = Frame(master, bg=self.colors["dark"]["bg"])
+        self.button_frame.place(x=10, y=80, width=410, height=550)
 
         # Configure grid weights for uniform distribution
         for i in range(8):  # Updated to 8 rows
-            button_frame.rowconfigure(i, weight=1)
+            self.button_frame.rowconfigure(i, weight=1)
         for j in range(4):  # 4 columns
-            button_frame.columnconfigure(j, weight=1)
+            self.button_frame.columnconfigure(j, weight=1)
 
         # Button configuration
         buttons = [
@@ -42,23 +50,56 @@ class Calculator:
             ['10^', 'e^', 'π', 'e'],
         ]
 
-        colors = {'bg': '#7289da', 'fg': 'white', 'hover': '#99aab5'}
+        self.button_widgets = []  # Store button widgets for color toggle
 
         for i, row in enumerate(buttons):
             for j, btn in enumerate(row):
-                Button(button_frame, text=btn, font=("Arial", 18), bg=colors['bg'], fg=colors['fg'],
-                       activebackground=colors['hover'], activeforeground="black",
-                       relief='flat', height=2, width=6,
-                       command=lambda b=btn: self.on_button_click(b)).grid(row=i, column=j, padx=5, pady=5)
+                button = Button(self.button_frame, text=btn, font=("Arial", 18), bg=self.colors["dark"]["button_bg"],
+                                fg=self.colors["dark"]["button_fg"], activebackground=self.colors["dark"]["button_bg"],
+                                activeforeground=self.colors["dark"]["fg"], relief='flat', height=2, width=6,
+                                command=lambda b=btn: self.on_button_click(b))
+                button.grid(row=i, column=j, padx=5, pady=5)
+                self.button_widgets.append(button)
 
         # Usage History Button
-        Button(self.master, text="Usage History", font=("Arial", 14), bg="#7289da", fg="white",
-               command=self.show_usage_history).place(x=250, y=645)
+        self.usage_history_button = Button(self.master, text="Usage History", font=("Arial", 14), 
+                                   bg=self.colors["dark"]["button_bg"], fg=self.colors["dark"]["button_fg"], 
+                                   command=self.show_usage_history)
+        self.usage_history_button.place(x=250, y=645)
+
 
         # Toggle radian/degree mode button
-        self.toggle_mode_button = Button(self.master, text="Rad", font=("Arial", 14), bg="#7289da", fg="white", 
-                                          command=self.toggle_mode)
-        self.toggle_mode_button.place(x=90, y=645)
+        self.toggle_mode_button = Button(self.master, text="Rad", font=("Arial", 14), bg=self.colors["dark"]["button_bg"],
+                                          fg=self.colors["dark"]["button_fg"], command=self.toggle_mode)
+        self.toggle_mode_button.place(x=50, y=645)
+
+        # Toggle Dark/Light Mode Button
+        self.mode_button = Button(self.master, text="Light Mode", font=("Arial", 14),
+                                  bg=self.colors["dark"]["button_bg"], fg=self.colors["dark"]["button_fg"],
+                                  command=self.toggle_theme)
+        self.mode_button.place(x=120, y=645)
+
+    def toggle_theme(self):
+        """Toggles between dark mode and light mode."""
+        self.is_dark_mode = not self.is_dark_mode
+        mode = "dark" if self.is_dark_mode else "light"
+        self.master.config(bg=self.colors[mode]["bg"])
+        self.button_frame.config(bg=self.colors[mode]["bg"])
+        self.entry.config(bg=self.colors[mode]["bg"], fg=self.colors[mode]["fg"])
+
+        # Update button colors
+        for button in self.button_widgets:
+            button.config(bg=self.colors[mode]["button_bg"], fg=self.colors[mode]["button_fg"],
+                          activebackground=self.colors[mode]["button_bg"], activeforeground=self.colors[mode]["fg"])
+
+        # Update other buttons
+        self.toggle_mode_button.config(bg=self.colors[mode]["button_bg"], fg=self.colors[mode]["button_fg"])
+        self.mode_button.config(bg=self.colors[mode]["button_bg"], fg=self.colors[mode]["button_fg"])
+        self.usage_history_button.config(bg=self.colors[mode]["button_bg"], fg=self.colors[mode]["button_fg"])
+
+
+        # Change the toggle button text
+        self.mode_button.config(text="Dark Mode" if mode == "light" else "Light Mode")
 
     def on_button_click(self, button):
         try:
@@ -224,11 +265,6 @@ class Calculator:
 
         history_box.bind("<Button-1>", on_history_click)
         history_box.config(state="normal", cursor="hand2")
-
-        # Add Clear History Button
-        Button(history_window, text="Clear History", font=("Arial", 12), bg="#7289da", fg="white",
-               command=lambda: [self.clear_history(), history_box.delete("1.0", "end")]).pack(pady=5)
-
 
 root = Tk()
 calculator = Calculator(root)
